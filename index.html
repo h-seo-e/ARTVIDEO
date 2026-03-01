@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Type Switch + Slider (Hashtag Sync)</title>
+<style>
+:root {
+  --main-color: #ffd64f; /* 버튼 활성화 색상 */
+  --tag-bg: #49200010;    /* 해시태그 배경색 */
+  --tag-border: #49200050; /* 해시태그 테두리 */
+  --tag-text: #492000;   /* 해시태그 글자색 */
+}
+
+[data-type-buttons] {
+  display:flex;
+  justify-content:center;
+  gap:14px;
+  margin:30px 0 20px;
+}
+[data-type-buttons] button {
+  padding:10px 20px;
+  border-radius:8px;
+  border:0;
+  cursor:pointer;
+  font-size:16px;
+  background:#eee;
+  transition: background .25s, transform .25s;
+}
+[data-type-buttons] button[data-active="true"] {
+  background:var(--main-color);
+  color:#222;
+  font-weight: bold;
+  transform:translateY(-2px);
+}
+
+section[data-type] {
+  display:none;
+}
+section[data-type][data-active="true"] {
+  display:block;
+}
+
+html,body {
+  height:100%; margin:0;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+  background:#fff; color:#222;
+}
+
+div[data-root] {
+  max-width:1180px; margin:10px auto 36px;
+  background:#fff; border-radius:16px;
+  padding:22px; box-shadow:0 8px 30px rgba(20,20,40,0.08);
+  box-sizing:border-box;
+}
+
+div[data-root] > div[data-stage] {
+  position:relative; width:100%; height:560px;
+  border-radius:12px; overflow:hidden;
+  background:#eeeeee;
+  display:flex; align-items:center; justify-content:center;
+}
+
+[data-stage] > div[data-slide] {
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  transition: transform 420ms cubic-bezier(.2,.9,.3,1), opacity 300ms;
+  transform: translateX(10%); opacity:0; pointer-events:none;
+}
+[data-stage] > div[data-slide][data-active="true"] {
+  transform: translateX(0); opacity:1; pointer-events:auto;
+}
+
+[data-slide] iframe {
+  max-width:880px; width:80%; height:auto; aspect-ratio:16/9;
+  border:0; border-radius:8px;
+  box-shadow: 0 5px 10px rgba(20,20,20,0.2);
+  background:#000;
+}
+
+[data-stage] > button[data-action="prev"],
+[data-stage] > button[data-action="next"] {
+  position:absolute; top:50%; transform:translateY(-50%);
+  width:44px; height:44px; border-radius:999px;
+  border:0; background:rgba(255,255,255,0.95);
+  box-shadow:0 6px 18px rgba(20,20,40,0.08);
+  cursor:pointer; display:flex; z-index:10;
+  align-items:center; justify-content:center;
+  font-size:18px; user-select:none;
+}
+[data-stage] > button[data-action="prev"] { left:14px; }
+[data-stage] > button[data-action="next"] { right:14px; }
+
+div[data-root] > div[data-tags-container] {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+}
+[data-tags-container] > div[data-tags] {
+  display: none;
+  gap: 10px;
+}
+[data-tags-container] > div[data-tags][data-active="true"] {
+  display: flex;
+}
+[data-tags] span {
+  padding: 8px 18px;
+  border-radius: 50px;
+  background: var(--tag-bg);
+  border: 1.5px solid var(--tag-border);
+  color: var(--tag-text);
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+}
+
+/* 도트 */
+div[data-root] > div[data-dots] {
+  margin-top:16px; display:none;/* 나타나려면 flex변경 */ gap:8px;
+  justify-content:center; align-items:center;
+}
+[data-dots] > button[data-dot] {
+  width:12px; height:12px; border-radius:999px;
+  border:0; background:#d9d9db; cursor:pointer;
+}
+[data-dots] > button[data-dot][data-active="true"] {
+  background:var(--main-color); transform:scale(1.15);
+}
+
+div[data-root] > div[data-thumbs-wrapper] {
+  margin-top:24px; position:relative;
+}
+[data-thumbs-wrapper] > div[data-thumbs] {
+  display:flex; gap:12px; overflow-x:auto; padding:10px 5px;
+  scrollbar-width: thin;
+  scroll-behavior: smooth;
+}
+[data-thumbs] > button[data-thumb] {
+  flex:0 0 auto; width:180px; aspect-ratio:16/9;
+  border-radius:8px; border:3px solid transparent; padding:0;
+  background:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.08);
+  cursor:pointer; overflow:hidden; transition: all 0.2s;
+}
+[data-thumb] > img {
+  width:100%; height:100%; object-fit:cover; display:block;
+}
+[data-thumbs] > button[data-thumb][data-active="true"] {
+  border-color:var(--main-color); transform:translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+[data-thumbs]::-webkit-scrollbar {
+  height: 10px;
+}
+
+[data-thumbs]::-webkit-scrollbar-track {
+  background: #e8e8ec;
+  border-radius: 10px;
+}
+
+[data-thumbs]::-webkit-scrollbar-thumb {
+  background: var(--main-color);
+  border-radius: 10px;
+}
+
+[data-thumbs]::-webkit-scrollbar-thumb:hover {
+  background: var(--main-color);
+}
+
+[data-thumbs] {
+  scrollbar-color: var(--main-color) #e8e8ec;
+  scrollbar-width: thin;
+}
+
+</style>
+</head>
+<body>
+
+    <div data-type-buttons></div>
+    <div id="type-container"></div>
+
+<script>
+// ------------------- 영상수정 -------------------
+const videoData = {
+    A: {
+        title: "일반",
+        list: [
+            { id: "0qJwiOIRqaw", tags: ["#프리미엄", "#모던", "#글로우"] },
+            { id: "ltErTIHvcWk", tags: ["#화려한", "#트렌지션", "#에펙"] },
+            { id: "ziQjvwRzvjk", tags: ["#깔끔한", "#인트로", "#디자인"] },
+            { id: "podc4s8r7FI", tags: ["#유튜브", "#아웃트로", "#템플릿"] },
+            { id: "F78s7IAyrRs", tags: ["#2D애니메이션", "#심플", "#로고"] },
+            { id: "OWoyKGNxb4A", tags: ["#감성적인", "#브이로그", "#자막"] },
+            { id: "Lx7TVqg6n38", tags: ["#시네마틱", "#타이틀", "#효과"] },
+            { id: "Z1VeR8nJdXA", tags: ["#게임", "#스트리머", "#패키지"] },
+            { id: "1LaOmUu8bjk", tags: ["#네온", "#사이버펑크", "#모션"] },
+            { id: "8ILIHR-kVh4", tags: ["#귀여운", "#일러스트", "#방송"] },
+            { id: "raZWtd5ksM0", tags: ["#비즈니스", "#홍보", "#영상"] },
+            { id: "VxZDmLRAr3U", tags: ["#미니멀", "#화이트", "#세련된"] }
+        ]
+    },
+    B: {
+        title: "쇼츠",
+        list: [
+            { id: "DzJiuIPNbyk", tags: ["#대기화면", "#시작", "#일러스트"] },
+            { id: "vfqqOs2mXPA", tags: ["#저스트채팅", "#오버레이", "#블루"] },
+            { id: "8Q--yhVUNSc", tags: ["#도네이션", "#알람", "#귀여운"] },
+            { id: "daLVTTpUark", tags: ["#채팅창", "#투명", "#커스텀"] },
+            { id: "rUkxwyRmlgk", tags: ["#방송종료", "#엔딩", "#밤하늘"] },
+            { id: "yRHeK6xpJMs", tags: ["#구독", "#배지", "#이모티콘"] },
+            { id: "gBPVeapsugA", tags: ["#트위치", "#치지직", "#UI"] },
+            { id: "GgYxRcHHe5E", tags: ["#버추얼", "#공간", "#3D"] },
+            { id: "XzF1TfQ901E", tags: ["#게임중", "#HUD", "#강렬한"] },
+            { id: "zvoDTAW8eZI", tags: ["#공지사항", "#게시판", "#정리"] },
+            { id: "d8TOBfZL-0Y", tags: ["#시즌이벤트", "#크리스마스", "#눈"] },
+            { id: "P8QKxZ282fc", tags: ["#토크쇼", "#멀티뷰", "#깔끔"] }
+        ]
+    },
+};
+
+function buildAllTypes() {
+    const typeButtonsWrap = document.querySelector("[data-type-buttons]");
+    const container = document.getElementById("type-container");
+
+    Object.keys(videoData).forEach((typeKey, idx) => {
+        const item = videoData[typeKey];
+
+        const btn = document.createElement("button");
+        btn.textContent = item.title;
+        btn.setAttribute("data-switch", typeKey);
+        if (idx === 0) btn.setAttribute("data-active", "true");
+        typeButtonsWrap.appendChild(btn);
+
+        const sec = document.createElement("section");
+        sec.setAttribute("data-type", typeKey);
+        if (idx === 0) sec.setAttribute("data-active", "true");
+        sec.innerHTML = generateSliderHTML(item.list);
+        container.appendChild(sec);
+    });
+}
+
+function generateSliderHTML(list) {
+    let slides = list.map((item, i) => `
+        <div data-slide data-index="${i}" data-active="${i===0}">
+            <iframe src="https://www.youtube.com/embed/${item.id}?enablejsapi=1" allowfullscreen></iframe>
+        </div>`).join("");
+
+    let tags = list.map((item, i) => `
+        <div data-tags data-index="${i}" data-active="${i===0}">
+            ${item.tags.map(tag => `<span>${tag}</span>`).join("")}
+        </div>`).join("");
+
+    let thumbs = list.map((item, i) => `
+        <button data-thumb data-index="${i}" ${i===0 ? 'data-active="true"' : ''}>
+            <img src="https://img.youtube.com/vi/${item.id}/mqdefault.jpg" alt="thumbnail">
+        </button>`).join("");
+
+    return `
+    <div data-root>
+        <div data-stage>
+            ${slides}
+            <button data-action="prev">❮</button>
+            <button data-action="next">❯</button>
+        </div>
+        
+        <div data-tags-container>
+            ${tags}
+        </div>
+
+        <div data-dots></div>
+        
+        <div data-thumbs-wrapper>
+            <div data-thumbs>${thumbs}</div>
+        </div>
+    </div>`;
+}
+
+function initSliders() {
+    const roots = document.querySelectorAll('div[data-root]');
+
+    roots.forEach(root => {
+        const stage = root.querySelector('[data-stage]');
+        const slides = Array.from(root.querySelectorAll('[data-slide]'));
+        const tagGroups = Array.from(root.querySelectorAll('[data-tags]'));
+        const thumbButtons = Array.from(root.querySelectorAll('[data-thumb]'));
+        const dotsWrap = root.querySelector('[data-dots]');
+        const prevBtn = root.querySelector('[data-action="prev"]');
+        const nextBtn = root.querySelector('[data-action="next"]');
+
+        let current = 0;
+        const total = slides.length;
+
+        function buildDots() {
+            dotsWrap.innerHTML = '';
+            for(let i=0; i<total; i++) {
+                const dot = document.createElement('button');
+                dot.setAttribute('data-dot', '');
+                if(i === current) dot.setAttribute('data-active', 'true');
+                dot.addEventListener('click', () => goTo(i));
+                dotsWrap.appendChild(dot);
+            }
+        }
+
+        function updateUI() {
+            slides.forEach((s, i) => s.setAttribute('data-active', i === current));
+            
+            tagGroups.forEach((tg, i) => tg.setAttribute('data-active', i === current));
+            
+            const dots = dotsWrap.querySelectorAll('[data-dot]');
+            dots.forEach((d, i) => i === current ? d.setAttribute('data-active', 'true') : d.removeAttribute('data-active'));
+
+            thumbButtons.forEach((t, i) => {
+                if(i === current) {
+                    t.setAttribute('data-active', 'true');
+                    t.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                } else {
+                    t.removeAttribute('data-active');
+                }
+            });
+        }
+
+        function goTo(i) {
+            if(i < 0) i = total - 1;
+            if(i >= total) i = 0;
+            current = i;
+            updateUI();
+        }
+
+        prevBtn.addEventListener('click', () => goTo(current - 1));
+        nextBtn.addEventListener('click', () => goTo(current + 1));
+        
+        thumbButtons.forEach((btn, idx) => {
+            btn.addEventListener('click', () => goTo(idx));
+        });
+
+        buildDots();
+        updateUI();
+
+        function resizeLayout() {
+            const width = stage.clientWidth;
+            stage.style.height = (width * 9 / 16) + 'px';
+        }
+        window.addEventListener('resize', resizeLayout);
+        resizeLayout();
+    });
+}
+
+buildAllTypes();
+initSliders();
+
+const typeBtns = document.querySelectorAll('[data-type-buttons] button');
+const sections = document.querySelectorAll('section[data-type]');
+
+typeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-switch');
+        
+        typeBtns.forEach(b => b.removeAttribute('data-active'));
+        btn.setAttribute('data-active', 'true');
+
+        sections.forEach(sec => {
+            if(sec.getAttribute('data-type') === target) {
+                sec.setAttribute('data-active', 'true');
+                window.dispatchEvent(new Event('resize'));
+            } else {
+                sec.removeAttribute('data-active');
+            }
+        });
+    });
+});
+
+(function() {
+    function sendHeight() {
+        const height = document.body.scrollHeight;
+        parent.postMessage({ type: "sliderHeight", value: height }, "*");
+    }
+    window.addEventListener('load', sendHeight);
+    window.addEventListener('resize', sendHeight);
+})();
+</script>
+</body>
+</html>
